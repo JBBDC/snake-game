@@ -1,56 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Title</title>
-    <style>
-        .cell {
-            display: block;
-            height: 20px;
-            width: 20px;
-        }
-        #field {
-            border: 1px solid black;
-            margin-bottom: 10px;
-            margin-top: 10px;
-        }
+<style>
 
-        #field, .main {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-        }
+    #field, .main {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
 
-        .main {
-            flex-direction: column;
-        }
+    .main {
+        flex-direction: column;
+        max-height: 80vh;
+    }
 
-        #start-btn {
-            font-family: "Droid Sans Mono", sans-serif;
-            padding: 20px 50px;
+    .game-area {
+        position: relative;
+        border: 1px solid black;
+        margin-bottom: 10px;
+        margin-top: 10px;
+    }
+
+    #start-btn {
+        position: absolute;
+        color: black;
+        width: 100%;
+        height: 100%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 4rem;
+        font-family: "DejaVu Sans Mono", sans-serif;
+        border: none;
+        outline: none;
+        background-color: transparent;
+    }
+
+    .score, #score {
+        font-size: 50px;
+    }
+
+    #score {
+        color: green;
+        font-family: "DejaVu Sans Mono", sans-serif;
+    }
+
+    #start-btn.running {
+        display: none;
+    }
+
+    .controls {
+        margin-top: 2vh;
+        width: 100vw;
+        height: 23vh;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+
+    }
+    #up, #down, #left, #right {
+        font-size: 50px;
+        height: 10vh;
+    }
+    #up, #down {
+        width: 100%;
+    }
+
+    .middle-wrapper {
+        flex-basis: 33%;
+    }
+    #left, #right {
+         flex-basis: 33%;
+    }
+    @media (min-width: 1024px) {
+        .controls {
+            display: none;
         }
-        #score, #start-btn {
-            font-size: 1.1rem;
-            color: green;
-            font-family: "DejaVu Sans Mono", sans-serif;
-        }
-    </style>
-</head>
-<body>
+    }
+
+</style>
 <div class="main">
-    <h1>It's a SNAKE!</h1>
-    <div><span>Score: </span><span id="score">300</span></div>
-    <div id="field"></div>
-    <button id="start-btn">Старт!</button>
+    <div class="score"><span>Score: </span><span id="score">0</span></div>
+    <div class="game-area">
+        <canvas id="field"></canvas>
+        <button id="start-btn">ENTER TO START!</button>
+    </div>
+    <div class="controls">
+        <button id="left">&#11013;</button>
+        <div class="middle-wrapper">
+            <button id="up">&#11014;</button>
+            <button id="down">&#11015;</button>
+        </div>
+        <button id="right">&#10145;</button>
+    </div>
 </div>
-</body>
 <script>
-    const size = 15;
-    const fieldDiv = document.getElementById("field");
-    const initialSpeed = 300;
-    const acceleration = 10;
-    const winLimit = 30;
+
+    const height = 18;
+    const cellSize = Math.floor((window.innerHeight - window.innerHeight*0.3) / height);
+    const width = calculateWidth();
+    const canvas = document.getElementById("field");
+    canvas.height = height * cellSize;
+    canvas.width = width * cellSize;
+    const context = canvas.getContext('2d');
+    const initialSpeed = 150;
+    const acceleration = 3;
+    const winLimit = 50;
     window.speed = initialSpeed;
     window.direction = "up";
 
@@ -61,94 +114,147 @@
     window.isDirectionPicked = false;
 
 
-    function setButtonListeners() {
+    function calculateWidth() {
+        let windowWidth = window.innerWidth;
+        let padding = 0;
+        if (windowWidth > 1024) {
+            padding = windowWidth*0.3;
+        } else if (windowWidth > 768) {
+            padding = windowWidth*0.1;
+        }
+        return Math.floor((windowWidth - padding) / cellSize);
+    }
+
+    function setControlsListeners() {
         document.addEventListener('keydown', function (event) {
             if (!isDirectionPicked) {
                 switch (event.key) {
                     case "ArrowLeft":
                         if (direction !== "right" && direction !== "left") {
+                            event.preventDefault();
                             window.direction = "left";
                             window.isDirectionPicked = true;
                         }
                         break;
                     case "ArrowRight":
                         if (direction !== "right" && direction !== "left") {
+                            event.preventDefault();
                             window.direction = "right";
                             window.isDirectionPicked = true;
                         }
                         break;
                     case "ArrowUp":
                         if (direction !== "up" && direction !== "down") {
+                            event.preventDefault();
                             window.direction = "up";
                             window.isDirectionPicked = true;
                         }
                         break;
                     case "ArrowDown":
                         if (direction !== "up" && direction !== "down") {
+                            event.preventDefault();
                             window.direction = "down";
                             window.isDirectionPicked = true;
                         }
+                        break;
+                    case "Enter":
+                        mainButtonAction();
                 }
             }
         });
 
         document.getElementById("start-btn").addEventListener('click', function () {
-            let btn = document.getElementById("start-btn");
-            if(btn.classList.contains("running")) {
-                btn.classList.remove("running");
-                stopGame();
-                btn.innerText = "Старт!"
-            } else {
-                btn.classList.add("running");
-                startGame();
-                btn.innerText = "Стоп!"
-            }
-        })
+            mainButtonAction();
+        });
+
+        // Bind control buttons only on mobile devices
+        if(window.innerWidth < 1024) {
+            document.getElementById("left").addEventListener("click", function (event) {
+                if (!isDirectionPicked && direction !== "right" && direction !== "left") {
+                    event.preventDefault();
+                    window.direction = "left";
+                    window.isDirectionPicked = true;
+                }
+            });
+            document.getElementById("right").addEventListener("click", function (event) {
+                if (!isDirectionPicked && direction !== "right" && direction !== "left") {
+                    event.preventDefault();
+                    window.direction = "right";
+                    window.isDirectionPicked = true;
+                }
+            });
+            document.getElementById("up").addEventListener("click", function (event) {
+                if (!isDirectionPicked && direction !== "up" && direction !== "down") {
+                    event.preventDefault();
+                    window.direction = "up";
+                    window.isDirectionPicked = true;
+                }
+            });
+            document.getElementById("down").addEventListener("click", function (event) {
+                if (!isDirectionPicked && direction !== "up" && direction !== "down") {
+                    event.preventDefault();
+                    window.direction = "down";
+                    window.isDirectionPicked = true;
+                }
+            });
+        }
+
+    }
+
+    function mainButtonAction() {
+        let btn = document.getElementById("start-btn");
+        if (btn.classList.contains("running")) {
+            pauseGame();
+        } else if (btn.classList.contains("paused")) {
+            resumeGame();
+        } else {
+            btn.classList.add("running");
+            startGame();
+        }
     }
 
     function spawnApple() {
-        let randomCoordinates = {y: getRandomInt(size), x: getRandomInt(size)};
+        let randomCoordinates = {y: getRandomInt(height), x: getRandomInt(width)};
         while (contains(randomCoordinates.x, randomCoordinates.y, window.snake)) {
-            randomCoordinates = {y: getRandomInt(size), x: getRandomInt(size)};
+            randomCoordinates = {y: getRandomInt(height), x: getRandomInt(width)};
         }
         window.apple = randomCoordinates;
     }
 
     function spawnSnake() {
         window.snake = [
-            {y: Math.floor(size / 2), x: Math.floor(size / 2)},
-            {y: Math.floor(size / 2), x: Math.floor(size / 2) + 1},
-            {y: Math.floor(size / 2), x: Math.floor(size / 2) + 2}
+            {y: Math.floor(height / 2), x: Math.floor(width / 2)},
+            {y: Math.floor(height / 2) + 1, x: Math.floor(width / 2)},
+            {y: Math.floor(height / 2) + 2, x: Math.floor(width / 2)}
         ];
         window.head = window.snake[0];
         window.tail = window.snake[window.snake.length - 1];
     }
 
     function draw() {
+
         clearCanvas();
-        for (let y = 0; y < size; y++) {
-            let row = document.createElement("div");
-            row.setAttribute("id", "newRow");
-            fieldDiv.append(row);
-            for (let x = 0; x < size; x++) {
-                if (contains(x, y, getSnakeBody())) {
-                    appendNewCell(row, `<span style="color: darkgreen;">X</span>`);
-                } else if (head.x === x && head.y === y) {
-                    appendNewCell(row, `<span style="color: forestgreen;">Q</span>`);
-                } else if (window.apple.x === x && window.apple.y === y) {
-                    appendNewCell(row, `<span style="color: red;">O</span>`);
-                } else {
-                    appendNewCell(row, "&nbsp;");
-                }
-            }
-            row.removeAttribute("id");
+
+        // Draw Snake Head
+        context.fillStyle = "darkgreen";
+        context.fillRect(head.x * cellSize, head.y * cellSize, cellSize - 1, cellSize - 1)
+
+        // Draw Snake Body
+        for (let segment of getSnakeBody()) {
+            context.fillStyle = "green";
+            context.fillRect(segment.x * cellSize, segment.y * cellSize, cellSize - 1, cellSize - 1)
         }
+
+        // Draw Apple
+        context.fillStyle = "red";
+        context.beginPath();
+        context.arc(apple.x * cellSize + cellSize / 2, apple.y * cellSize + cellSize / 2, Math.floor(cellSize / 2), 0, 2 * Math.PI, false);
+        context.stroke();
+        context.fill();
     }
 
     function clearCanvas() {
-        while (fieldDiv.firstChild) {
-            fieldDiv.removeChild(fieldDiv.lastChild);
-        }
+        context.clearRect(0, 0, width * cellSize, height * cellSize);
     }
 
     function contains(x, y, coordinatesArray) {
@@ -160,13 +266,6 @@
         return false;
     }
 
-    function appendNewCell(container, spanValue) {
-        let newCell = document.createElement("span");
-        newCell.innerHTML = spanValue;
-        newCell.classList.add("cell");
-        container.append(newCell);
-    }
-
     function getRandomInt(max) {
         return Math.floor(Math.random() * Math.floor(max));
     }
@@ -174,16 +273,16 @@
     function addHead() {
         switch (window.direction) {
             case "up":
-                window.snake.unshift({y: window.head.y, x: window.head.x - 1});
+                window.snake.unshift({y: window.head.y - 1, x: window.head.x});
                 break;
             case "down":
-                window.snake.unshift({y: window.head.y, x: window.head.x + 1});
-                break;
-            case "right":
                 window.snake.unshift({y: window.head.y + 1, x: window.head.x});
                 break;
+            case "right":
+                window.snake.unshift({y: window.head.y, x: window.head.x + 1});
+                break;
             case "left":
-                window.snake.unshift({y: window.head.y - 1, x: window.head.x});
+                window.snake.unshift({y: window.head.y, x: window.head.x - 1});
         }
         window.head = window.snake[0];
     }
@@ -195,7 +294,7 @@
 
     function move() {
         addHead();
-        if(isAppleEaten()) {
+        if (isAppleEaten()) {
             spawnApple();
             speedUp();
             refreshScore();
@@ -219,7 +318,7 @@
 
     function isGameOver() {
         return contains(window.head.x, window.head.y, getSnakeBody()) || window.head.x < 0
-            || window.head.y < 0 || window.head.x > size - 1 || window.head.y > size - 1;
+            || window.head.y < 0 || window.head.x > width - 1 || window.head.y > height - 1;
     }
 
     function startGame() {
@@ -237,16 +336,32 @@
         spawnApple();
         spawnSnake();
         document.getElementById("start-btn").classList.remove("running");
-        document.getElementById("start-btn").innerText = "Старт!";
+        document.getElementById("start-btn").innerText = "ENTER TO START!";
+    }
+
+    function pauseGame() {
+        let btn = document.getElementById("start-btn");
+        clearInterval(game);
+        btn.classList.remove("running");
+        btn.classList.add("paused");
+        btn.innerText = "ENTER TO RESUME";
+    }
+
+    function resumeGame() {
+        let btn = document.getElementById("start-btn");
+        btn.classList.remove("paused");
+        btn.classList.add("running");
+        btn.innerText = "ENTER TO START!";
+        window.game = setInterval(step, speed);
     }
 
     function refreshScore() {
         let score = document.getElementById("score");
-        score.innerText = String(snake.length*100);
+        score.innerText = String(snake.length * 100);
     }
 
     function isAppleEaten() {
-        if(head.x === apple.x && head.y === apple.y) {
+        if (head.x === apple.x && head.y === apple.y) {
             return true;
         }
         return false;
@@ -267,8 +382,7 @@
 
     /* -- START -- */
 
-    setButtonListeners();
+    setControlsListeners();
     draw();
 
 </script>
-</html>
