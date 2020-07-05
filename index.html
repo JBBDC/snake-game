@@ -59,6 +59,9 @@
     #up, #down, #left, #right {
         font-size: 50px;
         height: 10vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     #up, #down {
         width: 100%;
@@ -84,12 +87,12 @@
         <button id="start-btn">ENTER TO START!</button>
     </div>
     <div class="controls">
-        <button id="left">&#11013;</button>
+        <div id="left">&#11013;</div>
         <div class="middle-wrapper">
-            <button id="up">&#11014;</button>
-            <button id="down">&#11015;</button>
+            <div id="up">&#11014;</div>
+            <div id="down">&#11015;</div>
         </div>
-        <button id="right">&#10145;</button>
+        <div id="right">&#10145;</div>
     </div>
 </div>
 <script>
