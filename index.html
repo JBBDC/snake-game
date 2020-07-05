@@ -42,10 +42,6 @@
         font-family: "DejaVu Sans Mono", sans-serif;
     }
 
-    #start-btn.running {
-        display: none;
-    }
-
     .controls {
         margin-top: 2vh;
         width: 100vw;
@@ -57,8 +53,9 @@
 
     }
     #up, #down, #left, #right {
+        border: 1px solid gray;
         font-size: 50px;
-        height: 10vh;
+        height: 12vh;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -84,7 +81,7 @@
     <div class="score"><span>Score: </span><span id="score">0</span></div>
     <div class="game-area">
         <canvas id="field"></canvas>
-        <button id="start-btn">ENTER TO START!</button>
+        <button id="start-btn">PRESS TO START</button>
     </div>
     <div class="controls">
         <div id="left">&#11013;</div>
@@ -98,7 +95,7 @@
 <script>
 
     const height = 18;
-    const cellSize = Math.floor((window.innerHeight - window.innerHeight*0.3) / height);
+    const cellSize = Math.floor((window.innerHeight - window.innerHeight*0.35) / height);
     const width = calculateWidth();
     const canvas = document.getElementById("field");
     canvas.height = height * cellSize;
@@ -171,29 +168,30 @@
         });
 
         // Bind control buttons only on mobile devices
+
         if(window.innerWidth < 1024) {
-            document.getElementById("left").addEventListener("click", function (event) {
+            document.getElementById("left").addEventListener("touchstart", function (event) {
                 if (!isDirectionPicked && direction !== "right" && direction !== "left") {
                     event.preventDefault();
                     window.direction = "left";
                     window.isDirectionPicked = true;
                 }
             });
-            document.getElementById("right").addEventListener("click", function (event) {
+            document.getElementById("right").addEventListener("touchstart", function (event) {
                 if (!isDirectionPicked && direction !== "right" && direction !== "left") {
                     event.preventDefault();
                     window.direction = "right";
                     window.isDirectionPicked = true;
                 }
             });
-            document.getElementById("up").addEventListener("click", function (event) {
+            document.getElementById("up").addEventListener("touchstart", function (event) {
                 if (!isDirectionPicked && direction !== "up" && direction !== "down") {
                     event.preventDefault();
                     window.direction = "up";
                     window.isDirectionPicked = true;
                 }
             });
-            document.getElementById("down").addEventListener("click", function (event) {
+            document.getElementById("down").addEventListener("touchstart", function (event) {
                 if (!isDirectionPicked && direction !== "up" && direction !== "down") {
                     event.preventDefault();
                     window.direction = "down";
@@ -330,7 +328,10 @@
         spawnApple();
         spawnSnake();
         window.game = setInterval(step, speed);
+        btn.innerText = "";
     }
+
+    let btn = document.getElementById("start-btn");
 
     function stopGame() {
         window.speed = initialSpeed;
@@ -338,23 +339,21 @@
         window.direction = "up";
         spawnApple();
         spawnSnake();
-        document.getElementById("start-btn").classList.remove("running");
-        document.getElementById("start-btn").innerText = "ENTER TO START!";
+        btn.classList.remove("running");
+        btn.innerText = "PRESS TO START";
     }
 
     function pauseGame() {
-        let btn = document.getElementById("start-btn");
         clearInterval(game);
         btn.classList.remove("running");
         btn.classList.add("paused");
-        btn.innerText = "ENTER TO RESUME";
+        btn.innerText = "PRESS TO RESUME";
     }
 
     function resumeGame() {
-        let btn = document.getElementById("start-btn");
         btn.classList.remove("paused");
         btn.classList.add("running");
-        btn.innerText = "ENTER TO START!";
+        btn.innerText = "";
         window.game = setInterval(step, speed);
     }
 
